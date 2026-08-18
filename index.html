@@ -6,6 +6,7 @@
 <title>국립수산과학원 수온 및 피해현황 대시보드 (2026-08-18)</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="aquaculture_farms.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0;}
@@ -40,11 +41,13 @@
   .popup-row{font-size:12px;color:#7ec8e3;display:flex;justify-content:space-between;gap:14px;margin-top:3px;}
   .temp-marker{border-radius:50%;border:2.5px solid;display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:800;box-shadow:0 2px 8px rgba(0,0,0,.5);cursor:pointer;transition:transform .15s;line-height:1;}
   .temp-marker:hover{transform:scale(1.15);}
-  .legend{position:absolute;bottom:22px;right:10px;z-index:1000;background:rgba(13,30,54,.92);border:1px solid #1e3a5f;border-radius:8px;padding:11px 15px;font-size:12px;color:#b8d8e8;backdrop-filter:blur(4px);min-width:160px;}
+  .legend{position:absolute;top:10px;right:10px;bottom:auto;z-index:1000;background:rgba(13,30,54,.92);border:1px solid #1e3a5f;border-radius:8px;padding:11px 15px;font-size:12px;color:#b8d8e8;backdrop-filter:blur(4px);min-width:160px;}
+  #panel-0 .legend{top:60px;right:10px;}
   .legend h4{font-size:11px;color:#6b8fa8;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
   .legend-row{display:flex;align-items:center;gap:8px;margin-bottom:5px;white-space:nowrap;}
   .legend-dot{width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.4);flex-shrink:0;}
   .stat-bar{position:absolute;top:10px;left:10px;z-index:1000;background:rgba(13,30,54,.92);border:1px solid #1e3a5f;border-radius:8px;padding:10px 13px;font-size:12px;color:#b8d8e8;backdrop-filter:blur(4px);line-height:1.85;white-space:nowrap;}
+  #panel-0 .stat-bar{top:56px;}
   .stat-bar .val{color:#f4a261;font-weight:700;}
   .stat-bar .grn{color:#4caf50;font-weight:700;}
   .stat-bar .org{color:#e07020;font-weight:700;}
@@ -53,6 +56,54 @@
   .no-coord-box{position:absolute;bottom:22px;left:10px;z-index:1000;background:rgba(13,30,54,.9);border:1px solid #2a4a6f;border-radius:7px;padding:8px 12px;font-size:11px;color:#6b8fa8;max-width:360px;backdrop-filter:blur(4px);}
   .nc-label{color:#f4a261;font-weight:600;margin-right:4px;}
   .nc-item{display:inline-block;margin:2px 4px 2px 0;background:#1e3a5f;border-radius:3px;padding:1px 5px;color:#b8d8e8;}
+
+  /* ── 금일 수온 탭: 우측 상단 지도 제어 및 양식장 전환 UI ── */
+  .map-action-controls{position:absolute;top:10px;right:10px;z-index:1200;display:flex;align-items:center;gap:7px;}
+  .water-info-toggle,.farm-toggle{position:static;width:42px;height:42px;border:1px solid #2a4a70;border-radius:8px;background:rgba(13,30,54,.96);color:#7ec8e3;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,.35);backdrop-filter:blur(4px);}
+  .water-info-toggle:hover,.farm-toggle:hover{border-color:#f4a261;color:#f4a261;}
+  .water-info-toggle.active{background:#1e4b68;border-color:#7ec8e3;color:#e8f4f8;box-shadow:0 0 0 3px rgba(126,200,227,.18);}
+  .farm-toggle.active{background:#f4a261;border-color:#ffd166;color:#0a1628;box-shadow:0 0 0 3px rgba(244,162,97,.22);}
+  .water-info-toggle svg,.farm-toggle svg{width:23px;height:23px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+  .farm-search{position:absolute;top:10px;left:10px;z-index:1200;display:none;width:min(360px,calc(100vw - 82px));padding:7px 8px;background:rgba(13,30,54,.96);border:1px solid #1e3a5f;border-radius:8px;color:#b8d8e8;box-shadow:0 3px 12px rgba(0,0,0,.35);backdrop-filter:blur(4px);}
+  .farm-search.visible{display:block;}
+  .farm-search-row{display:flex;gap:5px;}
+  .farm-search-row input{flex:1;min-width:0;height:30px;padding:0 8px;border:1px solid #2a4a70;border-radius:5px;background:#091729;color:#e8f4f8;font-size:11px;outline:none;}
+  .farm-search-row input:focus{border-color:#7ec8e3;}
+  .farm-search-row input::placeholder{color:#6b8fa8;}
+  .farm-search-row button{height:30px;padding:0 10px;border:1px solid #f4a261;border-radius:5px;background:#f4a261;color:#0a1628;font-size:11px;font-weight:700;cursor:pointer;}
+  .farm-search-results{display:none;margin-top:7px;max-height:300px;overflow-y:auto;border-top:1px solid #1e3a5f;padding-top:6px;}
+  .farm-search-results.show{display:block;}
+  .farm-search-count{font-size:10px;color:#7ec8e3;margin-bottom:5px;}
+  .farm-search-item{display:block;width:100%;text-align:left;padding:7px 8px;margin-bottom:4px;border:1px solid #1e3a5f;border-radius:6px;background:#0d1e36;color:#b8d8e8;cursor:pointer;}
+  .farm-search-item:hover{background:#17304f;border-color:#7ec8e3;}
+  .farm-search-item strong{display:block;color:#fff;font-size:12px;margin-bottom:2px;}
+  .farm-search-item span{display:block;font-size:10px;color:#7ec8e3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .farm-search-empty{font-size:11px;color:#f4a261;padding:5px 2px;}
+  .farm-gps{position:absolute;top:62px;left:10px;z-index:1200;display:none;width:40px;height:40px;border:1px solid #2a4a70;border-radius:50%;background:rgba(13,30,54,.96);color:#4a9fd8;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,.35);backdrop-filter:blur(4px);}
+  .farm-gps.visible{display:flex;}
+  .farm-gps.active{background:#123259;border-color:#8fd6ff;color:#8fd6ff;box-shadow:0 0 0 4px rgba(74,159,216,.25),0 3px 12px rgba(0,0,0,.35);}
+  .farm-gps svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+  .farm-hidden{display:none !important;}
+  .water-info-hidden{display:none !important;}
+  .farm-popup .leaflet-popup-content-wrapper{background:#0d1e36;border:1px solid #1e3a5f;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,.5);color:#e8f4f8;}
+  .farm-popup .leaflet-popup-tip{background:#1e3a5f;}
+  .farm-popup-card{padding:3px 1px;min-width:210px;}
+  .farm-popup-tag{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;color:#fff;margin-bottom:6px;}
+  .farm-popup-title{font-size:14px;font-weight:700;color:#fff;margin-bottom:6px;}
+  .farm-popup-row{font-size:11px;color:#b8d8e8;line-height:1.45;margin-top:3px;}
+  .farm-popup-row b{color:#7ec8e3;}
+  @media (max-width:600px) {
+    .map-action-controls{top:7px;right:7px;gap:6px;}
+    .water-info-toggle,.farm-toggle{width:39px;height:39px;}
+    .water-info-toggle svg,.farm-toggle svg{width:21px;height:21px;}
+    #panel-0 .stat-bar{top:50px;left:7px;font-size:11px;padding:8px 10px;line-height:1.7;}
+    #panel-0 .legend{top:56px;right:7px;min-width:145px;padding:9px 11px;font-size:11px;}
+    #panel-0 .legend h4{margin-bottom:6px;}
+    #panel-0 .legend-row{gap:6px;margin-bottom:4px;}
+    #panel-0 .legend-dot{width:14px;height:14px;}
+    .farm-search{top:7px;left:7px;}
+    .farm-gps{top:57px;left:7px;}
+  }
 
   /* ── 3번 탭 (피해현황 및 특보 대시보드) 스타일 ── */
   .damage-panel{
@@ -214,7 +265,7 @@
     <button class="tab-btn" onclick="switchTab(1)">최근관측온도 <span class="tab-sub">11:00 기준</span></button>
     <button class="tab-btn" onclick="switchTab(2)">피해현황</button>
   </div>
-  <div class="meta" id="hdr-meta">2026-08-18 · 11:08:25 생성 &nbsp;|&nbsp; 수신 <b>192</b>/209개소</div>
+  <div class="meta" id="hdr-meta">2026-08-18 · 11:09:07 생성 &nbsp;|&nbsp; 수신 <b>192</b>/209개소</div>
 </header>
 
 <div class="map-panel active" id="panel-0">
@@ -228,6 +279,24 @@
     <div><span class="lbl">전국 평균</span>&nbsp;<span class="val">25.8°C</span></div>
   </div>
   
+  <div class="map-action-controls" aria-label="지도 제어">
+    <button class="water-info-toggle" id="water-info-toggle" type="button" aria-label="수온 현황 및 범례 표시" title="수온 현황 및 범례">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a2.5 2.5 0 0 0-2.5 2.5v9.2a4.5 4.5 0 1 0 5 0V5.5A2.5 2.5 0 0 0 12 3z"></path><path d="M12 7v9M9.5 17.2h5"></path></svg>
+    </button>
+    <button class="farm-toggle" id="farm-toggle" type="button" aria-label="양식장 표시" title="양식장 표시">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z"></path><path d="M4 4l16 16M20 4L4 20M12 4v16M4 12h16"></path></svg>
+    </button>
+  </div>
+  <div class="farm-search" id="farm-search" role="search">
+    <div class="farm-search-row">
+      <input id="farm-search-input" type="text" placeholder="양식번호 입력" autocomplete="off" aria-label="양식번호 입력">
+      <button id="farm-search-button" type="button">검색</button>
+    </div>
+    <div class="farm-search-results" id="farm-search-results"></div>
+  </div>
+  <button class="farm-gps" id="farm-gps" type="button" aria-label="내 위치 표시" title="내 위치 표시">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.5"></circle><path d="M12 2v4M12 18v4M2 12h4M18 12h4"></path></svg>
+  </button>
 </div>
 
 <div class="map-panel" id="panel-1">
@@ -383,8 +452,8 @@
 
 <script>
 const metaText = [
-  `2026-08-18 · 11:08:25 생성 &nbsp;|&nbsp; 수신 <b>192</b>/209개소`,
-  `2026-08-18 · 11:08:25 생성 &nbsp;|&nbsp; 수신 <b>192</b>/209개소`,
+  `2026-08-18 · 11:09:07 생성 &nbsp;|&nbsp; 수신 <b>192</b>/209개소`,
+  `2026-08-18 · 11:09:07 생성 &nbsp;|&nbsp; 수신 <b>192</b>/209개소`,
   `피해현황 대시보드 &nbsp;|&nbsp; 기준: <b>08.17</b>`
 ];
 const panels = document.querySelectorAll('.map-panel, .damage-panel');
@@ -407,12 +476,231 @@ function switchTab(idx) {
 }
 
 const maps = [null, null];
+
+
+// ── 금일 수온 탭: 양식장 레이어 및 검색/GPS ──
+const FARM_OFFSET = {lat:-0.0023963963963963965, lng:0.002600511929058334};
+const FARM_CATEGORY_META = {
+  fish: {label:'어류', color:'#2e86de'},
+  shellfish: {label:'패류', color:'#e67e22'},
+  seaweed: {label:'해조류', color:'#27ae60'},
+  mixed: {label:'복합/기타', color:'#8e44ad'}
+};
+let farmModeActive = false;
+let farmLayer = null;
+let farmLegendControl = null;
+let farmGpsWatchId = null;
+let farmGpsState = null;
+let waterInfoVisible = false;
+
+function farmEscape(value) {
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+
+function farmFormatDate(ymd) {
+  if (!ymd || String(ymd).length !== 8) return ymd || '-';
+  const s = String(ymd);
+  return `${s.slice(0,4)}.${s.slice(4,6)}.${s.slice(6,8)}`;
+}
+
+function farmPopupHtml(properties) {
+  const p = properties || {};
+  const meta = FARM_CATEGORY_META[p.cat] || FARM_CATEGORY_META.mixed;
+  return `<div class="farm-popup-card">
+    <div class="farm-popup-tag" style="background:${meta.color}">${meta.label}</div>
+    <div class="farm-popup-title">${farmEscape(p.lcns_no || '(면허번호 미상)')}</div>
+    <div class="farm-popup-row"><b>양식물:</b> ${farmEscape(p.farm_knd || '-')}</div>
+    <div class="farm-popup-row"><b>어업종류:</b> ${farmEscape(p.fids_knd || '-')}${p.fids_mthd ? ' / ' + farmEscape(p.fids_mthd) : ''}</div>
+    <div class="farm-popup-row"><b>면적:</b> ${farmEscape(p.area ?? '-')} ha</div>
+    <div class="farm-popup-row"><b>주소:</b> ${farmEscape(p.addr || '-')} (${farmEscape(p.sgg_nm || '-')})</div>
+    <div class="farm-popup-row"><b>면허기간:</b> ${farmFormatDate(p.lcns_bgng)} ~ ${farmFormatDate(p.lcns_end)}</div>
+  </div>`;
+}
+
+function ensureFarmLayer() {
+  const map = maps[0];
+  const farms = window.AQUACULTURE_FARMS_GEOJSON;
+  if (!map || !farms || !Array.isArray(farms.features)) {
+    window.alert('양식장 데이터를 불러오지 못했습니다. aquaculture_farms.js 파일이 수온 HTML과 같은 폴더에 있는지 확인해주세요.');
+    return false;
+  }
+  if (farmLayer) return true;
+
+  const pane = map.getPane('farm-pane') || map.createPane('farm-pane');
+  pane.style.zIndex = '650';
+  const renderer = L.canvas({pane:'farm-pane', padding:0.3});
+  farmLayer = L.geoJSON(farms, {
+    pane: 'farm-pane',
+    renderer: renderer,
+    coordsToLatLng: c => L.latLng(c[1] + FARM_OFFSET.lat, c[0] + FARM_OFFSET.lng),
+    style: feature => {
+      const meta = FARM_CATEGORY_META[(feature.properties || {}).cat] || FARM_CATEGORY_META.mixed;
+      return {color:meta.color, weight:1.2, fillColor:meta.color, fillOpacity:0.42, renderer:renderer};
+    },
+    onEachFeature: (feature, layer) => {
+      layer.bindPopup(farmPopupHtml(feature.properties), {className:'farm-popup', maxWidth:290});
+      layer.on('mouseover', () => layer.setStyle({weight:3, fillOpacity:0.72}));
+      layer.on('mouseout', () => farmLayer && farmLayer.resetStyle(layer));
+    }
+  }).addTo(map);
+  return true;
+}
+
+function clearFarmLayer() {
+  if (farmLayer && maps[0]) maps[0].removeLayer(farmLayer);
+  farmLayer = null;
+}
+
+function closeFarmSearch() {
+  const results = document.getElementById('farm-search-results');
+  if (results) { results.innerHTML = ''; results.classList.remove('show'); }
+}
+
+function selectFarmFeature(feature) {
+  if (!farmLayer || !maps[0]) return;
+  let targetLayer = null;
+  farmLayer.eachLayer(layer => { if (layer.feature === feature) targetLayer = layer; });
+  if (!targetLayer) return;
+  const bounds = targetLayer.getBounds();
+  if (bounds.isValid()) maps[0].fitBounds(bounds, {maxZoom:14, padding:[28,28]});
+  targetLayer.bringToFront();
+  window.setTimeout(() => targetLayer.openPopup(), 250);
+}
+
+function searchFarms() {
+  const input = document.getElementById('farm-search-input');
+  const results = document.getElementById('farm-search-results');
+  const farms = window.AQUACULTURE_FARMS_GEOJSON;
+  if (!input || !results || !farms) return;
+  const query = input.value.trim().toLowerCase().replace(/\s+/g, '');
+  closeFarmSearch();
+  if (!query) return;
+  const matches = farms.features.filter(feature => {
+    const no = String((feature.properties || {}).lcns_no || '').trim().toLowerCase().replace(/\s+/g, '');
+    return no.includes(query);
+  });
+  results.classList.add('show');
+  if (!matches.length) {
+    results.innerHTML = '<div class="farm-search-empty">해당 양식번호를 찾을 수 없습니다.</div>';
+    return;
+  }
+  const shown = matches.slice(0, 50);
+  const note = matches.length > shown.length ? ` · 처음 ${shown.length}건 표시` : '';
+  results.innerHTML = `<div class="farm-search-count">검색결과 ${matches.length}건${note}</div>` + shown.map((feature, index) => {
+    const p = feature.properties || {};
+    return `<button class="farm-search-item" type="button" data-farm-index="${index}"><strong>${farmEscape(p.lcns_no || '(면허번호 미상)')}</strong><span>${farmEscape(p.farm_knd || '-')} · ${farmEscape(p.addr || p.sgg_nm || '-')}</span></button>`;
+  }).join('');
+  results.querySelectorAll('.farm-search-item').forEach(item => {
+    item.addEventListener('click', () => { selectFarmFeature(shown[Number(item.dataset.farmIndex)]); closeFarmSearch(); });
+  });
+}
+
+function stopFarmGps() {
+  if (farmGpsWatchId !== null) navigator.geolocation.clearWatch(farmGpsWatchId);
+  farmGpsWatchId = null;
+  if (farmGpsState && maps[0]) {
+    maps[0].removeLayer(farmGpsState.marker);
+    maps[0].removeLayer(farmGpsState.circle);
+  }
+  farmGpsState = null;
+  document.getElementById('farm-gps')?.classList.remove('active');
+}
+
+function toggleFarmGps() {
+  const map = maps[0];
+  const button = document.getElementById('farm-gps');
+  if (!map || !button) return;
+  if (farmGpsWatchId !== null) { stopFarmGps(); return; }
+  if (!navigator.geolocation) { window.alert('이 브라우저에서는 위치 정보 기능을 지원하지 않습니다.'); return; }
+  if (location.protocol !== 'https:' && location.hostname !== 'localhost') { window.alert('위치 정보는 보안 연결(https)에서만 사용할 수 있습니다.'); return; }
+  const pane = map.getPane('farm-gps-pane') || map.createPane('farm-gps-pane');
+  pane.style.zIndex = '675';
+  button.classList.add('active');
+  farmGpsWatchId = navigator.geolocation.watchPosition(
+    position => {
+      const {latitude, longitude, accuracy} = position.coords;
+      if (!farmGpsState) {
+        const marker = L.circleMarker([latitude, longitude], {radius:8, weight:3, color:'#fff', fillColor:'#4a9fd8', fillOpacity:1, pane:'farm-gps-pane'}).addTo(map);
+        const circle = L.circle([latitude, longitude], {radius:accuracy, color:'#4a9fd8', weight:1, fillColor:'#4a9fd8', fillOpacity:0.14, pane:'farm-gps-pane'}).addTo(map);
+        farmGpsState = {marker, circle};
+        map.setView([latitude, longitude], Math.max(map.getZoom(), 14));
+      } else {
+        farmGpsState.marker.setLatLng([latitude, longitude]);
+        farmGpsState.circle.setLatLng([latitude, longitude]).setRadius(accuracy);
+      }
+    },
+    () => { window.alert('현재 위치를 가져올 수 없습니다. 브라우저의 위치 권한을 확인해주세요.'); stopFarmGps(); },
+    {enableHighAccuracy:true, timeout:12000, maximumAge:5000}
+  );
+}
+
+function setWaterInfo(visible) {
+  if (visible && farmModeActive) setFarmMode(false);
+  waterInfoVisible = visible;
+  document.getElementById('water-info-toggle')?.classList.toggle('active', visible);
+  document.getElementById('water-info-toggle')?.setAttribute('aria-pressed', String(visible));
+  document.getElementById('sb0')?.classList.toggle('water-info-hidden', !visible);
+  farmLegendControl?.getContainer()?.classList.toggle('water-info-hidden', !visible);
+  window.requestAnimationFrame(() => maps[0]?.invalidateSize());
+}
+
+function setFarmMode(active) {
+  const map = maps[0];
+  if (!map) return;
+  if (active && !ensureFarmLayer()) return;
+  if (active) setWaterInfo(false);
+  farmModeActive = active;
+  document.getElementById('farm-toggle')?.classList.toggle('active', active);
+  document.getElementById('farm-toggle')?.setAttribute('aria-pressed', String(active));
+  document.querySelector('#panel-0 .no-coord-box')?.classList.toggle('farm-hidden', active);
+  document.getElementById('farm-search')?.classList.toggle('visible', active);
+  document.getElementById('farm-gps')?.classList.toggle('visible', active);
+  if (!active) { clearFarmLayer(); closeFarmSearch(); stopFarmGps(); }
+  window.requestAnimationFrame(() => map.invalidateSize());
+}
+
+function initFarmTools(map, legendControl) {
+  farmLegendControl = legendControl;
+  const waterToggle = document.getElementById('water-info-toggle');
+  const toggle = document.getElementById('farm-toggle');
+  const input = document.getElementById('farm-search-input');
+  const searchButton = document.getElementById('farm-search-button');
+  const gpsButton = document.getElementById('farm-gps');
+  if (waterToggle && !waterToggle.dataset.bound) {
+    waterToggle.dataset.bound = 'true';
+    waterToggle.setAttribute('aria-pressed', 'false');
+    waterToggle.addEventListener('click', () => setWaterInfo(!waterInfoVisible));
+  }
+  if (toggle && !toggle.dataset.bound) {
+    toggle.dataset.bound = 'true';
+    toggle.setAttribute('aria-pressed', 'false');
+    toggle.addEventListener('click', () => setFarmMode(!farmModeActive));
+  }
+  if (searchButton && !searchButton.dataset.bound) {
+    searchButton.dataset.bound = 'true';
+    searchButton.addEventListener('click', searchFarms);
+  }
+  if (input && !input.dataset.bound) {
+    input.dataset.bound = 'true';
+    input.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); searchFarms(); } });
+  }
+  if (gpsButton && !gpsButton.dataset.bound) {
+    gpsButton.dataset.bound = 'true';
+    gpsButton.addEventListener('click', toggleFarmGps);
+  }
+  map.on('popupopen', event => {
+    const pane = map.getPane('popupPane');
+    if (pane) pane.style.zIndex = '700';
+  });
+  setWaterInfo(false);
+}
 const legendHTMLs = [
   `<h4>수온 범례</h4>
   <div class="legend-row"><div class="legend-dot" style="background:#e63946;border-color:#ff8fa3"></div> 28.0°C 이상</div>
   <div class="legend-row"><div class="legend-dot" style="background:#e07020;border-color:#ffb74d"></div> 27.0 ~ 27.9°C</div>
   <div class="legend-row"><div class="legend-dot" style="background:#e6b800;border-color:#ffd166"></div> 25.0 ~ 26.9°C</div>
-  <div class="legend-row"><div class="legend-dot" style="background:#2d9e2d;border-color:#7ed87e"></div> 24.0 ~ 24.9°C</div>`,
+   <div class="legend-row"><div class="legend-dot" style="background:#2d9e2d;border-color:#7ed87e"></div> 24.0 ~ 24.9°C</div>
+   <div class="legend-row"><div class="legend-dot" style="background:#7a8a9a;border-color:#aab4be"></div> 23.9°C 이하</div>`,
   `<h4>수온 범례</h4>
   <div class="legend-row"><div class="legend-dot" style="background:#e63946;border-color:#ff8fa3"></div> 28.0°C 이상</div>
   <div class="legend-row"><div class="legend-dot" style="background:#e07020;border-color:#ffb74d"></div> 27.0 ~ 27.9°C</div>
@@ -421,7 +709,7 @@ const legendHTMLs = [
 ];
 
 function initMap(idx) {
-  const m = L.map('map'+idx, {center:[34.9,127.5], zoom:8, zoomControl:true});
+  const m = L.map('map'+idx, {center:[34.9,127.5], zoom:8, zoomControl:false});
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'&copy; CARTO', maxZoom:19}).addTo(m);
   maps[idx] = m;
   const layerGroup = L.layerGroup().addTo(m);
@@ -597,7 +885,26 @@ function initMap(idx) {
   L.marker([34.267807,126.07843],{zIndexOffset:242,icon:L.divIcon({className:'',html:"<div class='temp-marker' style='width:10px;height:10px;background:#2d9e2d;border:none;font-size:0px;'></div>",iconSize:[10,10],iconAnchor:[5,5],popupAnchor:[0,-11]})}).addTo(layerGroup).bindPopup("<div class='popup-inner'><div class='popup-rank'>#170</div><div class='popup-name'>진도 신전</div><div class='popup-sea'>남해</div><div class='popup-temp'>24.2<span class='unit'> °C</span></div><div class='popup-row'><span>전일대비</span><span style='color:#457b9d;font-weight:700'>▼ -0.1°C</span></div></div>",{className:'custom-popup',maxWidth:220});
   L.marker([33.3104,126.164],{zIndexOffset:241,icon:L.divIcon({className:'',html:"<div class='temp-marker' style='width:10px;height:10px;background:#2d9e2d;border:none;font-size:0px;'></div>",iconSize:[10,10],iconAnchor:[5,5],popupAnchor:[0,-11]})}).addTo(layerGroup).bindPopup("<div class='popup-inner'><div class='popup-rank'>#171</div><div class='popup-name'>서제주</div><div class='popup-sea'>기타</div><div class='popup-temp'>24.1<span class='unit'> °C</span></div><div class='popup-row'><span>전일대비</span><span style='color:#457b9d;font-weight:700'>▼ -1.3°C</span></div></div>",{className:'custom-popup',maxWidth:220});
   L.marker([34.590206,126.292015],{zIndexOffset:241,icon:L.divIcon({className:'',html:"<div class='temp-marker' style='width:10px;height:10px;background:#2d9e2d;border:none;font-size:0px;'></div>",iconSize:[10,10],iconAnchor:[5,5],popupAnchor:[0,-11]})}).addTo(layerGroup).bindPopup("<div class='popup-inner'><div class='popup-rank'>#172</div><div class='popup-name'>해남 문내</div><div class='popup-sea'>남해</div><div class='popup-temp'>24.1<span class='unit'> °C</span></div><div class='popup-row'><span>전일대비</span><span style='color:#e63946;font-weight:700'>▲ +0.0°C</span></div></div>",{className:'custom-popup',maxWidth:220});
-  L.marker([34.630554,126.26237],{zIndexOffset:240,icon:L.divIcon({className:'',html:"<div class='temp-marker' style='width:10px;height:10px;background:#2d9e2d;border:none;font-size:0px;'></div>",iconSize:[10,10],iconAnchor:[5,5],popupAnchor:[0,-11]})}).addTo(layerGroup).bindPopup("<div class='popup-inner'><div class='popup-rank'>#173</div><div class='popup-name'>해남 궁항</div><div class='popup-sea'>남해</div><div class='popup-temp'>24.0<span class='unit'> °C</span></div><div class='popup-row'><span>전일대비</span><span style='color:#457b9d;font-weight:700'>▼ -0.1°C</span></div></div>",{className:'custom-popup',maxWidth:220}); } else {   L.marker([35.2006,126.2103],{zIndexOffset:303,icon:L.divIcon({className:'',html:"<div class='temp-marker' style='width:30px;height:30px;background:#e63946;border:none;font-size:9px;'>30.3</div>",iconSize:[30,30],iconAnchor:[15,15],popupAnchor:[0,-21]})}).addTo(layerGroup).bindPopup("<div class='popup-inner'><div class='popup-rank'>#1</div><div class='popup-name'>영광 낙월</div><div class='popup-sea'>서해</div><div class='popup-temp'>30.3<span class='unit'> °C</span></div><div class='popup-row'><span>관측시각</span><span style='color:#7ec8e3'>10:30</span></div><div class='popup-row'><span>전일대비</span><span style='color:#e63946;font-weight:700'>▲ +0.3°C</span></div></div>",{className:'custom-popup',maxWidth:220});
+  L.marker([34.630554,126.26237],{zIndexOffset:240,icon:L.divIcon({className:'',html:"<div class='temp-marker' style='width:10px;height:10px;background:#2d9e2d;border:none;font-size:0px;'></div>",iconSize:[10,10],iconAnchor:[5,5],popupAnchor:[0,-11]})}).addTo(layerGroup).bindPopup("<div class='popup-inner'><div class='popup-rank'>#173</div><div class='popup-name'>해남 궁항</div><div class='popup-sea'>남해</div><div class='popup-temp'>24.0<span class='unit'> °C</span></div><div class='popup-row'><span>전일대비</span><span style='color:#457b9d;font-weight:700'>▼ -0.1°C</span></div></div>",{className:'custom-popup',maxWidth:220});
+  L.marker([37.799,128.9492],{zIndexOffset:239,icon:L.divIcon({className:'',html:"<div class='temp-marker' style='width:10px;height:10px;background:#7a8a9a;border:none;font-size:0px;'></div>",iconSize:[10,10],iconAnchor:[5,5],popupAnchor:[0,-11]})}).addTo(layerGroup).bindPopup("<div class='popup-inner'><div class='popup-rank'>#174</div><div class='popup-name'>강릉</div><div class='popup-sea'>동해</div><div class='popup-temp'>23.9<span class='unit'> °C</span></div><div class='popup-row'><span>전일대비</span><span style='color:#e63946;font-weight:700'>▲ +0.8°C</span></div></div>",{className:'custom-popup',maxWidth:220});
+  L.marker([35.187,129.227],{zIndexOffset:239,icon:L.divIcon({className:'',html:"<div class='temp-marker' style='width:10px;height:10px;background:#7a8a9a;border:none;font-size:0px;'></div>",iconSize:[10,10],iconAnchor:[5,5],popupAnchor:[0,-11]})}).addTo(layerGroup).bindPopup("<div class='popup-inner'><div class='popup-rank'>#175</div><div class='popup-name'>기장</div><div class='popup-sea'>동해</div><div class='popup-temp'>23.9<span class='unit'> °C</span></div><div class='popup-row'><span>전일대비</span><span style='color:#457b9d;font-weight:700'>▼ -2.6°C</span></div></div>",{className:'custom-popup',maxWidth:220});
+  L.marker([34.734608,125.44935],{zIndexOffset:239,icon:L.divIcon({className:'',html:"<div class='temp-marker' style='width:10px;height:10px;background:#7a8a9a;border:none;font-size:0px;'></div>",iconSize:[10,10],iconAnchor:[5,5],popupAnchor:[0,-11]})}).addTo(layerGroup).bindPopup("<div class='popup-inner'><div class='popup-rank'>#176</div><div class='popup-name'>신안 다물도</div><div class='popup-sea'>남해</div><div class='popup-temp'>23.9<span class='unit'> °C</span></div><div class='popup-row'><span>전일대비</span><span style='color:#e63946;font-weight:700'>▲ +0.7°C</span></div></div>",{className:'custom-popup',maxWidth:220});
+  L.marker([38.3681,128.5239],{zIndexOffset:238,icon:L.divIcon({className:'',html:"<div class='temp-marker' style='width:10px;height:10px;background:#7a8a9a;border:none;font-size:0px;'></div>",iconSize:[10,10],iconAnchor:[5,5],popupAnchor:[0,-11]})}).addTo(layerGroup).bindPopup("<div class='popup-inner'><div class='popup-rank'>#177</div><div class='popup-name'>고성 가진</div><div class='popup-sea'>동해</div><div class='popup-temp'>23.8<span class='unit'> °C</span></div><div class='popup-row'><span>전일대비</span><span style='color:#e63946;font-weight:700'>▲ +0.1°C</span></div></div>",{className:'custom-popup',maxWidth:220});
+  L.marker([34.688545,125.40743],{zIndexOffset:238,icon:L.divIcon({className:'',html:"<div class='temp-marker' style='width:10px;height:10px;background:#7a8a9a;border:none;font-size:0px;'></div>",iconSize:[10,10],iconAnchor:[5,5],popupAnchor:[0,-11]})}).addTo(layerGroup).bindPopup("<div class='popup-inner'><div class='popup-rank'>#178</div><div class='popup-name'>신안 마리</div><div class='popup-sea'>남해</div><div class='popup-temp'>23.8<span class='unit'> °C</span></div><div class='popup-row'><span>전일대비</span><span style='color:#e63946;font-weight:700'>▲ +0.3°C</span></div></div>",{className:'custom-popup',maxWidth:220});
+  L.marker([34.59274,126.14085],{zIndexOffset:237,icon:L.divIcon({className:'',html:"<div class='temp-marker' style='width:10px;height:10px;background:#7a8a9a;border:none;font-size:0px;'></div>",iconSize:[10,10],iconAnchor:[5,5],popupAnchor:[0,-11]})}).addTo(layerGroup).bindPopup("<div class='popup-inner'><div class='popup-rank'>#179</div><div class='popup-name'>신안 다수</div><div class='popup-sea'>남해</div><div class='popup-temp'>23.7<span class='unit'> °C</span></div><div class='popup-row'><span>전일대비</span><span style='color:#e63946;font-weight:700'>▲ +0.1°C</span></div></div>",{className:'custom-popup',maxWidth:220});
+  L.marker([34.6035,126.0567],{zIndexOffset:236,icon:L.divIcon({className:'',html:"<div class='temp-marker' style='width:10px;height:10px;background:#7a8a9a;border:none;font-size:0px;'></div>",iconSize:[10,10],iconAnchor:[5,5],popupAnchor:[0,-11]})}).addTo(layerGroup).bindPopup("<div class='popup-inner'><div class='popup-rank'>#180</div><div class='popup-name'>신안 대리</div><div class='popup-sea'>남해</div><div class='popup-temp'>23.6<span class='unit'> °C</span></div><div class='popup-row'><span>전일대비</span><span style='color:#e63946;font-weight:700'>▲ +0.2°C</span></div></div>",{className:'custom-popup',maxWidth:220});
+  L.marker([36.605,126.1261],{zIndexOffset:236,icon:L.divIcon({className:'',html:"<div class='temp-marker' style='width:10px;height:10px;background:#7a8a9a;border:none;font-size:0px;'></div>",iconSize:[10,10],iconAnchor:[5,5],popupAnchor:[0,-11]})}).addTo(layerGroup).bindPopup("<div class='popup-inner'><div class='popup-rank'>#181</div><div class='popup-name'>태안 신진도</div><div class='popup-sea'>서해</div><div class='popup-temp'>23.6<span class='unit'> °C</span></div><div class='popup-row'><span>전일대비</span><span style='color:#e63946;font-weight:700'>▲ +0.5°C</span></div></div>",{className:'custom-popup',maxWidth:220});
+  L.marker([34.2872,126.1153],{zIndexOffset:235,icon:L.divIcon({className:'',html:"<div class='temp-marker' style='width:10px;height:10px;background:#7a8a9a;border:none;font-size:0px;'></div>",iconSize:[10,10],iconAnchor:[5,5],popupAnchor:[0,-11]})}).addTo(layerGroup).bindPopup("<div class='popup-inner'><div class='popup-rank'>#182</div><div class='popup-name'>진도 조도</div><div class='popup-sea'>남해</div><div class='popup-temp'>23.5<span class='unit'> °C</span></div><div class='popup-row'><span>전일대비</span><span style='color:#e63946;font-weight:700'>▲ +0.3°C</span></div></div>",{className:'custom-popup',maxWidth:220});
+  L.marker([37.1191,129.3958],{zIndexOffset:234,icon:L.divIcon({className:'',html:"<div class='temp-marker' style='width:10px;height:10px;background:#7a8a9a;border:none;font-size:0px;'></div>",iconSize:[10,10],iconAnchor:[5,5],popupAnchor:[0,-11]})}).addTo(layerGroup).bindPopup("<div class='popup-inner'><div class='popup-rank'>#183</div><div class='popup-name'>나곡</div><div class='popup-sea'>동해</div><div class='popup-temp'>23.4<span class='unit'> °C</span></div><div class='popup-row'><span>전일대비</span><span style='color:#457b9d;font-weight:700'>▼ -1.3°C</span></div></div>",{className:'custom-popup',maxWidth:220});
+  L.marker([34.692,126.0198],{zIndexOffset:234,icon:L.divIcon({className:'',html:"<div class='temp-marker' style='width:10px;height:10px;background:#7a8a9a;border:none;font-size:0px;'></div>",iconSize:[10,10],iconAnchor:[5,5],popupAnchor:[0,-11]})}).addTo(layerGroup).bindPopup("<div class='popup-inner'><div class='popup-rank'>#184</div><div class='popup-name'>신안 소신</div><div class='popup-sea'>남해</div><div class='popup-temp'>23.4<span class='unit'> °C</span></div><div class='popup-row'><span>전일대비</span><span style='color:#e63946;font-weight:700'>▲ +0.0°C</span></div></div>",{className:'custom-popup',maxWidth:220});
+  L.marker([37.1,129.4041],{zIndexOffset:233,icon:L.divIcon({className:'',html:"<div class='temp-marker' style='width:10px;height:10px;background:#7a8a9a;border:none;font-size:0px;'></div>",iconSize:[10,10],iconAnchor:[5,5],popupAnchor:[0,-11]})}).addTo(layerGroup).bindPopup("<div class='popup-inner'><div class='popup-rank'>#185</div><div class='popup-name'>덕천</div><div class='popup-sea'>동해</div><div class='popup-temp'>23.3<span class='unit'> °C</span></div><div class='popup-row'><span>전일대비</span><span style='color:#457b9d;font-weight:700'>▼ -1.6°C</span></div></div>",{className:'custom-popup',maxWidth:220});
+  L.marker([34.3418,126.02297],{zIndexOffset:233,icon:L.divIcon({className:'',html:"<div class='temp-marker' style='width:10px;height:10px;background:#7a8a9a;border:none;font-size:0px;'></div>",iconSize:[10,10],iconAnchor:[5,5],popupAnchor:[0,-11]})}).addTo(layerGroup).bindPopup("<div class='popup-inner'><div class='popup-rank'>#186</div><div class='popup-name'>진도 옥도</div><div class='popup-sea'>남해</div><div class='popup-temp'>23.3<span class='unit'> °C</span></div><div class='popup-row'><span>전일대비</span><span style='color:#457b9d;font-weight:700'>▼ -0.2°C</span></div></div>",{className:'custom-popup',maxWidth:220});
+  L.marker([34.4425,126.0569],{zIndexOffset:231,icon:L.divIcon({className:'',html:"<div class='temp-marker' style='width:10px;height:10px;background:#7a8a9a;border:none;font-size:0px;'></div>",iconSize:[10,10],iconAnchor:[5,5],popupAnchor:[0,-11]})}).addTo(layerGroup).bindPopup("<div class='popup-inner'><div class='popup-rank'>#187</div><div class='popup-name'>진도 불도</div><div class='popup-sea'>남해</div><div class='popup-temp'>23.1<span class='unit'> °C</span></div><div class='popup-row'><span>전일대비</span><span style='color:#e63946;font-weight:700'>▲ +0.2°C</span></div></div>",{className:'custom-popup',maxWidth:220});
+  L.marker([34.3178,126.1742],{zIndexOffset:231,icon:L.divIcon({className:'',html:"<div class='temp-marker' style='width:10px;height:10px;background:#7a8a9a;border:none;font-size:0px;'></div>",iconSize:[10,10],iconAnchor:[5,5],popupAnchor:[0,-11]})}).addTo(layerGroup).bindPopup("<div class='popup-inner'><div class='popup-rank'>#188</div><div class='popup-name'>진도 불무도</div><div class='popup-sea'>남해</div><div class='popup-temp'>23.1<span class='unit'> °C</span></div><div class='popup-row'><span>전일대비</span><span style='color:#e63946;font-weight:700'>▲ +0.1°C</span></div></div>",{className:'custom-popup',maxWidth:220});
+  L.marker([36.7123,126.147],{zIndexOffset:228,icon:L.divIcon({className:'',html:"<div class='temp-marker' style='width:10px;height:10px;background:#7a8a9a;border:none;font-size:0px;'></div>",iconSize:[10,10],iconAnchor:[5,5],popupAnchor:[0,-11]})}).addTo(layerGroup).bindPopup("<div class='popup-inner'><div class='popup-rank'>#189</div><div class='popup-name'>태안 파도리</div><div class='popup-sea'>서해</div><div class='popup-temp'>22.8<span class='unit'> °C</span></div><div class='popup-row'><span>전일대비</span><span style='color:#e63946;font-weight:700'>▲ +0.0°C</span></div></div>",{className:'custom-popup',maxWidth:220});
+  L.marker([37.3023,129.3127],{zIndexOffset:225,icon:L.divIcon({className:'',html:"<div class='temp-marker' style='width:10px;height:10px;background:#7a8a9a;border:none;font-size:0px;'></div>",iconSize:[10,10],iconAnchor:[5,5],popupAnchor:[0,-11]})}).addTo(layerGroup).bindPopup("<div class='popup-inner'><div class='popup-rank'>#190</div><div class='popup-name'>삼척</div><div class='popup-sea'>동해</div><div class='popup-temp'>22.5<span class='unit'> °C</span></div><div class='popup-row'><span>전일대비</span><span style='color:#e63946;font-weight:700'>▲ +0.4°C</span></div></div>",{className:'custom-popup',maxWidth:220});
+  L.marker([34.6406,125.4225],{zIndexOffset:221,icon:L.divIcon({className:'',html:"<div class='temp-marker' style='width:10px;height:10px;background:#7a8a9a;border:none;font-size:0px;'></div>",iconSize:[10,10],iconAnchor:[5,5],popupAnchor:[0,-11]})}).addTo(layerGroup).bindPopup("<div class='popup-inner'><div class='popup-rank'>#191</div><div class='popup-name'>신안 사리</div><div class='popup-sea'>남해</div><div class='popup-temp'>22.1<span class='unit'> °C</span></div><div class='popup-row'><span>전일대비</span><span style='color:#e63946;font-weight:700'>▲ +0.8°C</span></div></div>",{className:'custom-popup',maxWidth:220});
+  L.marker([37.9505,124.7295],{zIndexOffset:209,icon:L.divIcon({className:'',html:"<div class='temp-marker' style='width:10px;height:10px;background:#7a8a9a;border:none;font-size:0px;'></div>",iconSize:[10,10],iconAnchor:[5,5],popupAnchor:[0,-11]})}).addTo(layerGroup).bindPopup("<div class='popup-inner'><div class='popup-rank'>#192</div><div class='popup-name'>백령도</div><div class='popup-sea'>서해</div><div class='popup-temp'>20.9<span class='unit'> °C</span></div><div class='popup-row'><span>전일대비</span><span style='color:#457b9d;font-weight:700'>▼ -0.1°C</span></div></div>",{className:'custom-popup',maxWidth:220}); } else {   L.marker([35.2006,126.2103],{zIndexOffset:303,icon:L.divIcon({className:'',html:"<div class='temp-marker' style='width:30px;height:30px;background:#e63946;border:none;font-size:9px;'>30.3</div>",iconSize:[30,30],iconAnchor:[15,15],popupAnchor:[0,-21]})}).addTo(layerGroup).bindPopup("<div class='popup-inner'><div class='popup-rank'>#1</div><div class='popup-name'>영광 낙월</div><div class='popup-sea'>서해</div><div class='popup-temp'>30.3<span class='unit'> °C</span></div><div class='popup-row'><span>관측시각</span><span style='color:#7ec8e3'>10:30</span></div><div class='popup-row'><span>전일대비</span><span style='color:#e63946;font-weight:700'>▲ +0.3°C</span></div></div>",{className:'custom-popup',maxWidth:220});
   L.marker([35.082153,126.41558],{zIndexOffset:292,icon:L.divIcon({className:'',html:"<div class='temp-marker' style='width:30px;height:30px;background:#e63946;border:none;font-size:9px;'>29.2</div>",iconSize:[30,30],iconAnchor:[15,15],popupAnchor:[0,-21]})}).addTo(layerGroup).bindPopup("<div class='popup-inner'><div class='popup-rank'>#2</div><div class='popup-name'>함평 석두</div><div class='popup-sea'>남해</div><div class='popup-temp'>29.2<span class='unit'> °C</span></div><div class='popup-row'><span>관측시각</span><span style='color:#7ec8e3'>10:00</span></div><div class='popup-row'><span>전일대비</span><span style='color:#e63946;font-weight:700'>▲ +0.0°C</span></div></div>",{className:'custom-popup',maxWidth:220});
   L.marker([35.154137,126.34794],{zIndexOffset:287,icon:L.divIcon({className:'',html:"<div class='temp-marker' style='width:30px;height:30px;background:#e63946;border:none;font-size:9px;'>28.7</div>",iconSize:[30,30],iconAnchor:[15,15],popupAnchor:[0,-21]})}).addTo(layerGroup).bindPopup("<div class='popup-inner'><div class='popup-rank'>#3</div><div class='popup-name'>무안 도리포</div><div class='popup-sea'>남해</div><div class='popup-temp'>28.7<span class='unit'> °C</span></div><div class='popup-row'><span>관측시각</span><span style='color:#7ec8e3'>10:00</span></div><div class='popup-row'><span>전일대비</span><span style='color:#457b9d;font-weight:700'>▼ -0.1°C</span></div></div>",{className:'custom-popup',maxWidth:220});
   L.marker([36.6163,126.3717],{zIndexOffset:284,icon:L.divIcon({className:'',html:"<div class='temp-marker' style='width:30px;height:30px;background:#e63946;border:none;font-size:9px;'>28.4</div>",iconSize:[30,30],iconAnchor:[15,15],popupAnchor:[0,-21]})}).addTo(layerGroup).bindPopup("<div class='popup-inner'><div class='popup-rank'>#4</div><div class='popup-name'>서산 창리</div><div class='popup-sea'>서해</div><div class='popup-temp'>28.4<span class='unit'> °C</span></div><div class='popup-row'><span>관측시각</span><span style='color:#7ec8e3'>10:30</span></div><div class='popup-row'><span>전일대비</span><span style='color:#457b9d;font-weight:700'>▼ -0.1°C</span></div></div>",{className:'custom-popup',maxWidth:220});
@@ -789,9 +1096,10 @@ function initMap(idx) {
   L.marker([36.7123,126.147],{zIndexOffset:223,icon:L.divIcon({className:'',html:"<div class='temp-marker' style='width:10px;height:10px;background:#7a8a9a;border:none;font-size:0px;'></div>",iconSize:[10,10],iconAnchor:[5,5],popupAnchor:[0,-11]})}).addTo(layerGroup).bindPopup("<div class='popup-inner'><div class='popup-rank'>#190</div><div class='popup-name'>태안 파도리</div><div class='popup-sea'>서해</div><div class='popup-temp'>22.3<span class='unit'> °C</span></div><div class='popup-row'><span>관측시각</span><span style='color:#7ec8e3'>10:30</span></div><div class='popup-row'><span>전일대비</span><span style='color:#e63946;font-weight:700'>▲ +0.0°C</span></div></div>",{className:'custom-popup',maxWidth:220});
   L.marker([34.6406,125.4225],{zIndexOffset:220,icon:L.divIcon({className:'',html:"<div class='temp-marker' style='width:10px;height:10px;background:#7a8a9a;border:none;font-size:0px;'></div>",iconSize:[10,10],iconAnchor:[5,5],popupAnchor:[0,-11]})}).addTo(layerGroup).bindPopup("<div class='popup-inner'><div class='popup-rank'>#191</div><div class='popup-name'>신안 사리</div><div class='popup-sea'>남해</div><div class='popup-temp'>22.0<span class='unit'> °C</span></div><div class='popup-row'><span>관측시각</span><span style='color:#7ec8e3'>10:00</span></div><div class='popup-row'><span>전일대비</span><span style='color:#e63946;font-weight:700'>▲ +0.8°C</span></div></div>",{className:'custom-popup',maxWidth:220});
   L.marker([37.9505,124.7295],{zIndexOffset:211,icon:L.divIcon({className:'',html:"<div class='temp-marker' style='width:10px;height:10px;background:#7a8a9a;border:none;font-size:0px;'></div>",iconSize:[10,10],iconAnchor:[5,5],popupAnchor:[0,-11]})}).addTo(layerGroup).bindPopup("<div class='popup-inner'><div class='popup-rank'>#192</div><div class='popup-name'>백령도</div><div class='popup-sea'>서해</div><div class='popup-temp'>21.1<span class='unit'> °C</span></div><div class='popup-row'><span>관측시각</span><span style='color:#7ec8e3'>10:30</span></div><div class='popup-row'><span>전일대비</span><span style='color:#457b9d;font-weight:700'>▼ -0.1°C</span></div></div>",{className:'custom-popup',maxWidth:220}); }
-  const leg = L.control({position:'bottomright'});
+  const leg = L.control({position:'topright'});
   leg.onAdd = function() { const d = L.DomUtil.create('div','legend'); d.innerHTML = legendHTMLs[idx]; return d; };
   leg.addTo(m);
+  if (idx === 0) initFarmTools(m, leg);
 }
 
 initMap(0);
