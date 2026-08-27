@@ -345,7 +345,7 @@
     <button class="tab-btn" onclick="switchTab(1)">최근관측온도 <span class="tab-sub">11:00 기준</span></button>
     <button class="tab-btn" onclick="switchTab(2)">피해현황</button>
   </div>
-  <div class="meta" id="hdr-meta">2026-08-27 · 11:26:00 생성 &nbsp;|&nbsp; 수신 <b>198</b>/209개소</div>
+  <div class="meta" id="hdr-meta">2026-08-27 · 11:34:37 생성 &nbsp;|&nbsp; 수신 <b>198</b>/209개소</div>
 </header>
 
 <div class="map-panel active" id="panel-0">
@@ -586,8 +586,8 @@
 
 <script>
 const metaText = [
-  `2026-08-27 · 11:26:00 생성 &nbsp;|&nbsp; 수신 <b>198</b>/209개소`,
-  `2026-08-27 · 11:26:00 생성 &nbsp;|&nbsp; 수신 <b>198</b>/209개소`,
+  `2026-08-27 · 11:34:37 생성 &nbsp;|&nbsp; 수신 <b>198</b>/209개소`,
+  `2026-08-27 · 11:34:37 생성 &nbsp;|&nbsp; 수신 <b>198</b>/209개소`,
   `피해현황 대시보드 &nbsp;|&nbsp; 기준: <b>08.26</b>`
 ];
 const panels = document.querySelectorAll('.map-panel, .damage-panel');
@@ -1173,15 +1173,15 @@ const legendHTMLs = [
   <div class="legend-row"><div class="legend-dot" style="background:#7a8a9a;border-color:#aab4be"></div> 24.9°C 이하</div>`
 ];
 
-// ── 배경지도(흑/백) 전환 ──
-// 흑색지도: CARTO dark_all (기존)
+// ── 배경지도(위성/백) 전환 ──
+// 위성지도: 브이월드(V-World) 위성영상 — 국토교통부 국토정보플랫폼의 오픈 API (기존 CARTO 흑색지도 대체)
 // 백색지도: 브이월드(V-World) 백지도 — 국토교통부 국토정보플랫폼의 오픈 API, 한글 지명/지형 표기
 const VWORLD_API_KEY = '157B3208-B2B2-3F62-91D0-A3C82B0ACF1F';
 const baseTileLayers = [null, null];   // [{dark, white}, {dark, white}]
 const basemapMode = ['dark', 'dark'];
 
 function buildBaseLayers() {
-  const dark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {attribution:'&copy; CARTO', maxZoom:19});
+  const dark = L.tileLayer(`https://api.vworld.kr/req/wmts/1.0.0/${VWORLD_API_KEY}/Satellite/{z}/{y}/{x}.jpeg`, {attribution:'&copy; VWorld (국토교통부 국토정보플랫폼) 위성영상', maxZoom:19, minZoom:6});
   const white = L.tileLayer(`https://api.vworld.kr/req/wmts/1.0.0/${VWORLD_API_KEY}/white/{z}/{y}/{x}.png`, {attribution:'&copy; VWorld (국토교통부 국토정보플랫폼)', maxZoom:19, minZoom:6});
   return {dark, white};
 }
