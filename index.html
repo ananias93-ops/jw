@@ -340,7 +340,7 @@
     <button class="tab-btn" onclick="switchTab(1)">최근관측온도 <span class="tab-sub">12:04 기준</span></button>
     <button class="tab-btn" onclick="switchTab(2)">피해현황</button>
   </div>
-  <div class="meta" id="hdr-meta">2026-08-27 · 12:23:32 생성 &nbsp;|&nbsp; 수신 <b>198</b>/209개소</div>
+  <div class="meta" id="hdr-meta">2026-08-27 · 12:30:32 생성 &nbsp;|&nbsp; 수신 <b>198</b>/209개소</div>
 </header>
 
 <div class="map-panel active" id="panel-0">
@@ -579,8 +579,8 @@
 
 <script>
 const metaText = [
-  `2026-08-27 · 12:23:32 생성 &nbsp;|&nbsp; 수신 <b>198</b>/209개소`,
-  `2026-08-27 · 12:23:32 생성 &nbsp;|&nbsp; 수신 <b>198</b>/209개소`,
+  `2026-08-27 · 12:30:32 생성 &nbsp;|&nbsp; 수신 <b>198</b>/209개소`,
+  `2026-08-27 · 12:30:32 생성 &nbsp;|&nbsp; 수신 <b>198</b>/209개소`,
   `피해현황 대시보드 &nbsp;|&nbsp; 기준: <b>08.26</b>`
 ];
 const panels = document.querySelectorAll('.map-panel, .damage-panel');
@@ -802,7 +802,6 @@ function toggleFarmGps() {
 
 function setWaterInfo(visible) {
   const map = maps[0];
-  if (visible && farmModeActive) setFarmMode(false);
   waterInfoVisible = visible;
   document.getElementById('water-info-toggle')?.classList.toggle('active', visible);
   document.getElementById('water-info-toggle')?.setAttribute('aria-pressed', String(visible));
@@ -819,7 +818,6 @@ function setFarmMode(active) {
   const map = maps[0];
   if (!map) return;
   if (active && !ensureFarmLayer()) return;
-  if (active) setWaterInfo(false);
   farmModeActive = active;
   document.getElementById('farm-toggle')?.classList.toggle('active', active);
   document.getElementById('farm-toggle')?.setAttribute('aria-pressed', String(active));
@@ -1615,11 +1613,7 @@ function initMap(idx) {
   L.marker([33.9731,126.2783],{zIndexOffset:232,icon:L.divIcon({className:'',html:"<div class='temp-marker' style='width:10px;height:10px;background:#7a8a9a;border:none;font-size:0px;'></div>",iconSize:[10,10],iconAnchor:[5,5],popupAnchor:[0,-11]})}).addTo(layerGroup).bindPopup("<div class='popup-inner'><div class='popup-rank'>#196</div><div class='popup-name'>추자도</div><div class='popup-sea'>남해</div><div class='popup-temp'>23.2<span class='unit'> °C</span></div><div class='popup-row'><span>관측시각</span><span style='color:#7ec8e3'>11:30</span></div></div>",{className:'custom-popup',maxWidth:220});
   L.marker([34.2872,126.1153],{zIndexOffset:231,icon:L.divIcon({className:'',html:"<div class='temp-marker' style='width:10px;height:10px;background:#7a8a9a;border:none;font-size:0px;'></div>",iconSize:[10,10],iconAnchor:[5,5],popupAnchor:[0,-11]})}).addTo(layerGroup).bindPopup("<div class='popup-inner'><div class='popup-rank'>#197</div><div class='popup-name'>진도 조도</div><div class='popup-sea'>남해</div><div class='popup-temp'>23.1<span class='unit'> °C</span></div><div class='popup-row'><span>관측시각</span><span style='color:#7ec8e3'>12:00</span></div></div>",{className:'custom-popup',maxWidth:220});
   L.marker([37.9505,124.7295],{zIndexOffset:222,icon:L.divIcon({className:'',html:"<div class='temp-marker' style='width:10px;height:10px;background:#7a8a9a;border:none;font-size:0px;'></div>",iconSize:[10,10],iconAnchor:[5,5],popupAnchor:[0,-11]})}).addTo(layerGroup).bindPopup("<div class='popup-inner'><div class='popup-rank'>#198</div><div class='popup-name'>백령도</div><div class='popup-sea'>서해</div><div class='popup-temp'>22.2<span class='unit'> °C</span></div><div class='popup-row'><span>관측시각</span><span style='color:#7ec8e3'>12:00</span></div></div>",{className:'custom-popup',maxWidth:220}); }
-  let leg = null;
   if (idx === 0) {
-    leg = L.control({position:'topright'});
-    leg.onAdd = function() { const d = L.DomUtil.create('div','legend'); d.innerHTML = legendHTMLs[idx]; return d; };
-    leg.addTo(m);
     baseLayerGroup0 = layerGroup;
     specialLayerGroup = L.layerGroup();
       L.marker([37.799,128.9492],{icon:L.divIcon({className:'',html:"<div class='special-marker' style='background:#8a8a8a;'></div>",iconSize:[15,15],iconAnchor:[7,7],popupAnchor:[0,-9]})}).addTo(specialLayerGroup).bindPopup("<div class='popup-inner'><div class='popup-name'>강릉</div><div class='popup-sea'>동해</div><div class='popup-temp'>26.2<span class='unit'> °C</span></div><div class='popup-row'><span>판정</span><span style='color:#8a8a8a;font-weight:700'>특이사항 없음</span></div><div class='popup-row'><span>전일/2일전</span><span>25.4°C / 24.9°C</span></div><div class='popup-row'><span>인접 2개소</span><span style='font-size:10.5px;text-align:right'>양양 25.2°C (38.2km), 삼척 24.7°C (63.9km)</span></div></div>",{className:'custom-popup',maxWidth:230});
@@ -1820,7 +1814,7 @@ function initMap(idx) {
   L.marker([34.404167,126.48045],{icon:L.divIcon({className:'',html:"<div class='special-marker' style='background:#ff0000;'></div>",iconSize:[15,15],iconAnchor:[7,7],popupAnchor:[0,-9]})}).addTo(specialLayerGroup).bindPopup("<div class='popup-inner'><div class='popup-name'>해남 학가</div><div class='popup-sea'>남해</div><div class='popup-temp'>29.5<span class='unit'> °C</span></div><div class='popup-row'><span>판정</span><span style='color:#ff0000;font-weight:700'>3일 연속 28℃ 이상</span></div><div class='popup-row'><span>전일/2일전</span><span>29.8°C / 29.6°C</span></div><div class='popup-row'><span>인접 2개소</span><span style='font-size:10.5px;text-align:right'>해남 화산 28.8°C (5.8km), 해남 어란 28.1°C (6.2km)</span></div></div>",{className:'custom-popup',maxWidth:230});
   L.marker([34.4235,126.4216],{icon:L.divIcon({className:'',html:"<div class='special-marker' style='background:#ff0000;'></div>",iconSize:[15,15],iconAnchor:[7,7],popupAnchor:[0,-9]})}).addTo(specialLayerGroup).bindPopup("<div class='popup-inner'><div class='popup-name'>해남 화산</div><div class='popup-sea'>남해</div><div class='popup-temp'>28.8<span class='unit'> °C</span></div><div class='popup-row'><span>판정</span><span style='color:#ff0000;font-weight:700'>3일 연속 28℃ 이상</span></div><div class='popup-row'><span>전일/2일전</span><span>28.8°C / 28.5°C</span></div><div class='popup-row'><span>인접 2개소</span><span style='font-size:10.5px;text-align:right'>진도 회동 28.4°C (3.2km), 해남 상마 28.3°C (5.3km)</span></div></div>",{className:'custom-popup',maxWidth:230});
   L.marker([34.54145,126.3752],{icon:L.divIcon({className:'',html:"<div class='special-marker' style='background:#8a8a8a;'></div>",iconSize:[15,15],iconAnchor:[7,7],popupAnchor:[0,-9]})}).addTo(specialLayerGroup).bindPopup("<div class='popup-inner'><div class='popup-name'>해남 황산</div><div class='popup-sea'>남해</div><div class='popup-temp'>27.7<span class='unit'> °C</span></div><div class='popup-row'><span>판정</span><span style='color:#8a8a8a;font-weight:700'>특이사항 없음</span></div><div class='popup-row'><span>전일/2일전</span><span>27.8°C / 27.8°C</span></div><div class='popup-row'><span>인접 2개소</span><span style='font-size:10.5px;text-align:right'>해남 삼정 26.8°C (3.7km), 해남 상마 28.3°C (8.5km)</span></div></div>",{className:'custom-popup',maxWidth:230});
-    initFarmTools(m, leg);
+    initFarmTools(m);
   }
 }
 
