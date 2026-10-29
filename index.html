@@ -337,6 +337,10 @@
   .region-trend-empty{color:#6b8fa8;font-size:13px;text-align:center;padding:40px 0;}
   #chartRegionSpecies2026{cursor:pointer;}
 
+  /* 지도 타일 이음새(격자선) 제거 */
+  .leaflet-tile{outline:1px solid transparent;}
+  .leaflet-container{background:#0a1628;}
+
   /* ── 저수온/고수온 모드 전환 ── */
   .hdr-right{display:flex;align-items:center;gap:14px;}
   .temp-mode-toggle{display:flex;gap:3px;background:#071220;border:1px solid #1e3a5f;border-radius:16px;padding:3px;}
@@ -364,7 +368,7 @@
     <button class="tab-btn" onclick="switchTab(2)">피해현황</button>
   </div>
   <div class="hdr-right">
-    <div class="meta" id="hdr-meta">2026-10-29 · 15:54:26 생성 &nbsp;|&nbsp; 수신 <b>194</b>/210개소</div>
+    <div class="meta" id="hdr-meta">2026-10-29 · 15:58:27 생성 &nbsp;|&nbsp; 수신 <b>194</b>/210개소</div>
     <div class="temp-mode-toggle" role="group" aria-label="수온 구분">
       <button type="button" class="temp-mode-btn active" data-mode="low" onclick="setTempMode('low')">저수온</button>
       <button type="button" class="temp-mode-btn" data-mode="high" onclick="setTempMode('high')">고수온</button>
@@ -711,8 +715,8 @@
 
 <script>
 const metaText = [
-  `2026-10-29 · 15:54:26 생성 &nbsp;|&nbsp; 수신 <b>194</b>/210개소`,
-  `2026-10-29 · 15:54:26 생성 &nbsp;|&nbsp; 수신 <b>195</b>/210개소`,
+  `2026-10-29 · 15:58:27 생성 &nbsp;|&nbsp; 수신 <b>194</b>/210개소`,
+  `2026-10-29 · 15:58:27 생성 &nbsp;|&nbsp; 수신 <b>195</b>/210개소`,
   `피해현황 대시보드 &nbsp;|&nbsp; 기준: <b>09.29</b>`
 ];
 const panels = document.querySelectorAll('.map-panel, .damage-panel');
